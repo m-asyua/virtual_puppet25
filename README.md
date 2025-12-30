@@ -12,7 +12,7 @@ This tool uses face-api-js.
 https://justadudewhohacks.github.io/face-api.js/docs/index.html
 
 
-The following files should be under the site url:
+The following files should be under the site url (Root directory. sorry I couldn't solve the problem):
 
 	`// https://xxxxxx.xxx.xxx/tiny_face_detector_model-shard1`
 
