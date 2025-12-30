@@ -6,7 +6,7 @@ You can try this sample here https://social-exp.site/virtual_puppet25_local/
 ![from_repository](demo_virtual_puppet.gif)
 
 
-![from_repository](demo2_virtual_puppet.gif)
+<img src="demo2_virtual_puppet.gif" width="300">
 
 
 
