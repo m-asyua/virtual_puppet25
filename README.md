@@ -13,7 +13,10 @@ https://justadudewhohacks.github.io/face-api.js/docs/index.html
 
 
 The following files should be under the site url:
+
 	`// https://xxxxxx.xxx.xxx/tiny_face_detector_model-shard1`
+
 	`// https://xxxxxx.xxx.xxx/tiny_face_detector_model-weights_manifest.json`
+
 
 
