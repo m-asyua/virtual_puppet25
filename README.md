@@ -3,10 +3,10 @@ Virtual puppet controlled with a hand
 
 You can try this sample here https://social-exp.site/virtual_puppet25_local/
 
-![from_repository](demo_virtual_puppet.gif)
+<img src="demo_virtual_puppet.gif" width="600">
 
 
-<img src="demo2_virtual_puppet.gif" width="300">
+<img src="demo2_virtual_puppet.gif" width="400">
 
 
 
