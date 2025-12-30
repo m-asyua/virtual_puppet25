@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="jp">
+
+<head>
+	<meta charset="UTF-8" />
+
+	<script src="https://unpkg.com/three@0.140.0/build/three.js"></script>
+	<script src="https://unpkg.com/three@0.140.0/examples/js/loaders/GLTFLoader.js"></script>
+	<script src="https://unpkg.com/@pixiv/three-vrm@0.6.11/lib/three-vrm.js"></script>
+
+    <script src="https://unpkg.com/p5@1.11.1/lib/p5.js"></script>
+    <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.js"></script>
+
+	<script src="./face-api.js"></script>
+
+	<script src="./js/faceDetectionControls.js"></script>
+
+	<script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+	<script src="./js/materialize.min.js"></script>
+
+
+
+</head>
+
+
+
+
+
+<body bgcolor="#ffffff">
+
+	<span id="target_control_panel"></span>
+
+    <!-- 3D canvas for character -->
+    <div id="canvas-frame"   style="position:absolute;top:0px;left:0px" ></div>
+
+    <!-- for camera (browser window) -->
+    <div id="camera_window_div" ></div>
+
+
+
+
+
+
+
+<div id="control_panel" style="position:absolute;top:10px;left:200px;width:90%;" >
+
+		<input class="b_type" type="button" value="Settings" onclick="open_control_panel()">
+
+    <!--  control panel  -->
+<span id="open_panel" style="visibility:hidden"  style="position:absolute;top:0px;left:450px;" >
+
+
+<table border="1" style="background:rgba(255, 255, 255, 0.8);"   >
+<tr>
+<td>
+
+
+	<!-- Start / Stop button -->
+	<input class="start_type" type="button" value="Start" onclick="my_video_start()" >
+	<input class="start_type" type="button" value="Stop"  onclick="my_video_stop()"  >
+
+<br />
+
+
+
+	<input type="checkbox" id="puppet_set">Puppet: <span id="puppet_name"></span><br />
+	<input type="checkbox" id="avatar_set">Avatar: <span id="avatar_name"></span><br />
+
+	<hr>
+
+- Background:
+<ul>
+<input type="radio"  name="back"  value="0"    onclick="main_camera_sw(0)"  >Camera/
+<input type="radio"  name="back"  value="1"    onclick="main_camera_sw(1),set_bgcolor('white')"  >White/ 
+<input type="radio"  name="back"  value="2"    onclick="main_camera_sw(1),set_bgcolor('blue')"  >Blue/
+<input type="radio"  name="back"  value="3"    onclick="main_camera_sw(1),set_bgcolor('green')"  >Green/<br />
+<input type="radio"  name="back"  value="4"    onclick="main_camera_sw(1),set_bgcolor('other')"  >Other:
+<input type="text"   id="color_text"  size="5" value="#a00000"/>
+</ul>
+
+- Hand (Orientation):
+<ul>
+<input type="radio"   name="puppet_mode"  value="0" onclick="hand3d_sw(0);" >Off<br />
+<input type="radio"   name="puppet_mode"  value="1" onclick="hand3d_sw(1);" >On :
+
+<input type="checkbox" id="puppet_rot_x"  value="0"  onclick="puppet_rot_sw()"; >X,
+<input type="checkbox" id="puppet_rot_y"  value="1"  onclick="puppet_rot_sw()"; checked >Y,
+<input type="checkbox" id="puppet_rot_z"  value="2"  onclick="puppet_rot_sw()"; >Z<br />
+</ul>
+
+- Hand (Track):
+<ul>
+<input type="radio" name="track_method"  value="0" onclick="track_method(0);" >Off<br />
+<input type="radio" name="track_method"  value="1" onclick="track_method(1);" >On<br />
+<input type="radio" name="track_method"  value="2" onclick="track_method(2);" >On (mark)<br />
+</ul>
+
+- Face (Orientation):<br />
+<ul>
+<input id="face_capture_on_0" type="radio"  name="capture_method" value="0" onclick="face_capture_sw(0)" >Off<br />
+<input id="face_capture_on_1" type="radio"  name="capture_method" value="1" onclick="face_capture_sw(1)" >On (Camera Window Off)<br />
+<input id="face_capture_on_2" type="radio"  name="capture_method" value="2" onclick="face_capture_sw(2)" >On (Camera Window On)<br />
+</ul>
+
+</td>
+
+<td>
+
+(1A)<input type="button" value="Check camera" onclick="my_camera_number_setting(0)">Check camera(1280x720 only)
+<br />
+
+
+(1B)<input type="button" value="Check camera" onclick="my_camera_number_setting(1)">Check camera resolution(it may take a few minutes)
+<br />
+(2)Select camera<select id="camera_select" name="camera_name" ><option >(not selected)</option></select>
+<span id="checking_camera_message"></span>
+<input type="button" value="Stop checking" onclick="check_stop()">
+
+<br />
+<br />
+
+
+<input type="button" name="reset_button" value="Puppet pose reset" onclick="character_reset(0)" ><br />
+<input type="button" name="reset_button" value="Avatar pose reset" onclick="character_reset(1)" ><br />
+
+<br />
+Puppet:<input id="read_file_vrm0" type="file" /><br>
+
+X:
+<input type="range" id="puppet_x" min="-7" max="7" step="0.01" value="0" oninput="document.getElementById('puppet_x_value').innerHTML=this.value" />
+<span id="puppet_x_value">0</span><br />
+Y:
+<input type="range" id="puppet_y" min="-7" max="7" step="0.01" value="0" oninput="document.getElementById('puppet_y_value').innerHTML=this.value"  />
+<span id="puppet_y_value">0</span><br />
+Z:
+<input type="range" id="puppet_z"  min="-7" max="7" step="0.01" value="0" oninput="document.getElementById('puppet_z_value').innerHTML=this.value"  />
+<span id="puppet_z_value">0</span><br />
+Rotation:
+<input type="range" id="puppet_ry" min="-7" max="7" step="0.01" value="0" oninput="document.getElementById('puppet_ry_value').innerHTML=this.value"  />
+<span id="puppet_ry_value">0</span><br />
+
+<br />
+
+Avatar:<input id="read_file_vrm1" type="file" /><br>
+
+X:
+<input type="range" id="avatar_x"  min="-7" max="7" step="0.01" value="0" oninput="document.getElementById('avatar_x_value').innerHTML=this.value" />
+<span id="avatar_x_value">0</span><br />
+Y:
+<input type="range" id="avatar_y"  min="-7" max="7" step="0.01" value="0" oninput="document.getElementById('avatar_y_value').innerHTML=this.value" />
+<span id="avatar_y_value">0</span><br />
+Z:
+<input type="range" id="avatar_z"  min="-7" max="7" step="0.01" value="0" oninput="document.getElementById('avatar_z_value').innerHTML=this.value" />
+<span id="avatar_z_value">0</span><br />
+Rotation:
+<input type="range" id="avatar_ry" min="-7" max="7" step="0.01" value="0" oninput="document.getElementById('avatar_ry_value').innerHTML=this.value" />
+<span id="avatar_ry_value">0</span><br />
+
+
+</td>
+</tr>
+</table>
+
+</span>
+
+	<!-- video and landmarks -->
+	<div     id="video_mini_window_div"    style="position: absolute; top: 640px;  left: -150px; z-index:10;"  ></div>
+	<div     id="overlay_div"              style="position: absolute; top: 640px;  left: -150px; z-index:10;"  ></div>
+	<div     id="hand_landmarks"           style="position: absolute; top: 640px;  left: -150px; z-index:10;"  ></div>
+
+</div>
+
+
+
+
+<script>
+
+
+
+
+
+
+
+
+
+
+
+let debug   =  1;  // on=1, off=0
+
+
+
+let main_camera_flg = true;
+let main_camera_loop_flg = false;
+
+
+function main_camera_sw(sw){
+//	if(sw==0){ main_camera_flg = true;  } // on
+//	if(sw==1){ main_camera_flg = false; } // off
+}
+
+
+
+
+
+
+function hand3d_sw(sw){
+	if(sw == 0){  hand_3d_loop_flg  = false;  }
+	if(sw == 1){  hand_3d_loop_flg  = true;   hand_3d_loop(true); hand_track_camera_process_start(); }
+}
+
+
+let enable_x = false;
+let enable_y = true;
+let enable_z = false;
+
+
+function puppet_rot_sw(){
+	enable_x = document.getElementById("puppet_rot_x").checked;
+	enable_y = document.getElementById("puppet_rot_y").checked;
+	enable_z = document.getElementById("puppet_rot_z").checked;
+}
+
+
+let face_capture_show = false;
+
+function face_capture_sw(sw){
+	if( sw == 0 ){
+		face_capture_flg  = false;
+		capture_my_video_stop();
+	}else if( sw == 1 ){
+		face_capture_show = false;   // off
+		face_capture_flg  = true;
+		face_method();
+	}else if( sw == 2 ){
+		face_capture_show = true;    // on
+		face_capture_flg  = true;
+		face_method();
+	}
+}
+
+
+
+	let character_track = false;
+	let display_hand_mark = false;
+
+	let hand_track_camera_process_flg = false;
+
+
+
+
+function track_method(sw){
+
+	if(button_state == false)return;
+
+	if(sw==0){
+		character_track = false;      // not track hand
+		hand_track_loop_flg = false;
+		display_hand_mark = false;    // no mark
+
+		hand_track_camera_process_flg = false;
+
+		return;
+
+	}else if(sw==1){
+		hand_track_loop_flg = true;
+		display_hand_mark = false;    // no mark
+		character_track = true;       // track hand
+	}else if(sw==2){
+		hand_track_loop_flg = true;
+		display_hand_mark = true;     // display mark
+		character_track = true;       //  track hand
+	}
+
+	hand_track_camera_process_start();
+
+}
+
+
+
+
+function hand_track_camera_process_start(){
+
+	if(hand_track_camera_process_flg)return;
+
+	if(button_state == false)return;
+
+
+	canvas = createCanvas(window.innerWidth, window.innerHeight);
+	fill(255,   255, 255);
+	rect(0, 0,window.innerWidth, window.innerHeight);
+
+	HandPose = ml5.handpose(video);
+
+	HandPose.on('predict', result => {
+		handResult = result;
+	});
+
+	hand_track_camera_process_flg = true;
+
+	hand_track_main_loop();
+
+}
+
+
+
+
+
+
+
+
+let avatar_enable = false;
+
+
+
+	let console_flg         = false;
+
+	let finger_text_flg     = false;
+
+	let global_handpose_flg = false;
+
+	let hand_capture_flg    = true;
+
+
+
+
+
+
+
+
+
+
+
+
+	let hand_video;
+
+
+	let my_video_start_flg = 0;
+
+
+
+
+
+async function my_video_start(){
+
+console.log("start");
+
+
+	// stop
+	my_video_stop();
+
+	global_handpose_flg = true;
+
+	button_state = true;
+
+	//  associative array/hash        !  or  length
+	if(typeof option_camera_id === 'undefined' || option_camera_id == null || !Object.keys(option_camera_id).length){
+		my_option_camera_id['video'] = true;
+		my_option_camera_id['audio'] = false;
+	}else{
+		my_option_camera_id = option_camera_id;
+	}
+
+
+
+
+
+	if (check_radio_button("back") == 0 ){
+		main_camera_loop_flg = true;
+	}else{
+		main_camera_loop_flg = false;
+	}
+
+
+
+	if(main_camera_flg == true){
+		main_camera_start();
+console.log("main_camera_start");
+	}
+
+
+//? move to in main_camera_start()
+/*
+	renderer.setSize(window.innerHeight * video.width       /  video.height,   window.innerHeight  );
+	camera.aspect =   video.width /video.height ;
+	camera.updateProjectionMatrix();
+*/
+
+	if(document.getElementById("puppet_set").checked){
+		vrm_model_load(0, document.getElementById("puppet_name").innerHTML  );
+	}
+
+	if(document.getElementById("avatar_set").checked){
+		vrm_model_load(1, document.getElementById("avatar_name").innerHTML  );
+		avatar_enable = true;
+	}
+
+	track_method(check_radio_button("track_method"));
+
+	face_capture_sw(check_radio_button("capture_method"));
+
+//	face_method();
+
+	//hand 3d
+	hand_3d_loop_flg  = true;
+	hand_3d_loop(true); 
+	hand_track_camera_process_start();
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+async function face_method(){
+
+	if(button_state == false)return;
+
+	mini_camera_stop();
+	face_capture_stop();
+
+
+	if(	my_video_start_button_flg == 0){
+		my_video_start_button_flg = 1;
+		await face_capture_init();
+	}
+
+
+	if(face_capture_flg == true ){
+			making_video_mini_window(); // making VideoEl
+			
+			// it takes a few seconds
+			setTimeout( ()=>{
+				mini_window_resize();
+			},2000);
+	}
+
+
+	// start face capture
+	if(face_capture_flg)face_capture_start();
+
+
+}
+
+
+
+
+function capture_my_video_stop(){
+	mini_camera_stop();
+	face_capture_stop();
+}
+
+
+
+async function my_video_stop(){
+	console.log("stop");
+
+	button_state = false;
+	my_video_start_flg = 0;
+
+	global_handpose_flg = false; //???
+
+	main_camera_stop();
+
+	mini_camera_stop();
+
+	face_capture_stop();
+
+}
+
+
+
+/*
+
+**************************************************
+
+*/
+
+
+
+
+
+
+
+
+
+	let body_bgcolor        = "#5f5f5f";
+//	let hand_capture_flg    =  false;     // global           (for BinaryFingers.js)
+	let face_capture_flg    =  false;
+
+
+	let face_video_background_flg  =  false;  // background video
+
+	let video_mini_window_flg = false;
+
+
+	let mini_window         =  true;
+
+
+//	let finger_text_flg     =  false;     // display binary   (for BinaryFingers.js)
+
+	let control_panel_flg              =  1;      // display control panel
+	let my_video_start_button_flg      =  0;      // check first time to push start button
+
+	let my_left_margin = 30, my_top_margin = 30;
+
+	let model_url   =   './models/1_sennin.vrm';   //  character file
+
+
+
+
+
+	let hand_action_loop_id;
+
+	let puppet_loop_id;
+
+
+
+	let width   =  1920;
+	let height  =  1280;
+
+
+//	let camera_width;
+//	let camera_height;
+
+//	let camera_src_window;
+	let camera_mini_window_width = 160;
+	let camera_mini_window_height;
+
+	let face_camera_width, face_camera_height;
+
+
+
+
+
+	let virtual_canvas_width_half    =  3.5;
+	let virtual_canvas_height_half   =  2.9;
+
+
+
+	let plane_width   =  14.3;
+	let plane_height;  //  =  10;
+    // plane_height made by camera_width and camera_height
+
+
+
+
+	// camera_position y  = characters_positiony  = image_postion y = 0
+
+
+	let image_position  =  [  0,  0, -20 ];
+	let image_rotation  =  [  0,  0,   0 ];    // degree
+
+
+
+
+	let camera_position = [0,  0,  0];
+
+	let character_load_init_position  =  [0, -5, -10];
+
+	let upper_arm_option_angle = 62;    //  T-pose to A-pose
+	let lower_arm_option_angle = 22;    //  T-pose to A-pose 
+
+	let vrm_loading_interval  =  500;
+
+//	let character_load_flg   =  -1;
+
+
+
+
+
+	let current_vrm = new Array();
+
+
+	let scene;
+	let renderer;
+	let camera;
+	let ctx_2d;
+
+	let camera_width;
+	let camera_height;
+
+
+	let option_camera_id = {};
+	let camera_devices  =  {};
+
+
+	let button_state = false;
+	let face_video_background_window;
+	let face_video_background_stream;
+
+
+	let stream;
+	let videoEl;
+	let face_capture_loop_flg = false;
+
+	let face_capture_canvas;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function mini_window_resize(){
+	if(typeof videoEl === 'undefined' ||  videoEl == null ){  
+		//  videoElのタグが作成できるまで待つ必要がある．
+		return setTimeout(() => mini_window_resize())
+	}// ?無限ループにならないのか？
+	
+	let  camera_src_settings = (stream.getVideoTracks()[0]).getSettings();
+	face_camera_width = camera_src_settings.width;
+	face_camera_height = camera_src_settings.height;
+
+
+	videoEl.width  =  camera_mini_window_width;
+	videoEl.height =  face_camera_height * camera_mini_window_width / face_camera_width ;
+
+console.log("****mini",camera_mini_window_width,face_camera_height * camera_mini_window_width / face_camera_width);
+
+
+
+}
+
+
+async function face_capture_init() {
+
+	let loc = location.pathname;
+	let dir = loc.substring(0, loc.lastIndexOf('/')) +  "/js/weights/"; 
+
+// console.log(location.pathname +","+dir);
+
+	await changeFaceDetector(TINY_FACE_DETECTOR);
+	await faceapi.loadFaceLandmarkModel( dir );
+	// however,the following files should be under the site url
+	// https://xxxxxx.xxx.xxx/tiny_face_detector_model-shard1
+	// https://xxxxxx.xxx.xxx/tiny_face_detector_model-weights_manifest.json
+
+	changeInputSize(512); // ???
+
+}
+
+
+
+
+async function mini_camera_stop(){
+	if(stream != null){
+		await stream.getTracks().forEach(  track => track.stop()  );  
+	}
+
+	if( videoEl  !=   null  ){
+		videoEl.remove();
+	}
+}
+
+
+
+async function making_video_mini_window(){
+
+console.log(my_option_camera_id);
+
+		stream = await navigator.mediaDevices.getUserMedia(my_option_camera_id);
+
+		videoEl = document.createElement("video");
+		videoEl.id = "video_mini_window";
+		videoEl.muted = true;
+		videoEl.setAttribute('autoplay', 'autoplay');
+		videoEl.setAttribute('playsinline', 'playsinline');
+		videoEl.setAttribute('style', 'z-Index:20;ZIndex:20;');
+
+
+
+		// hidden or visible
+		if(  face_capture_show == true){
+			document.getElementById("video_mini_window_div").style.visibility = "visible";
+			document.getElementById("overlay_div").style.visibility = "visible";
+			videoEl.style.visibility = "visible";
+		}else{
+			document.getElementById("video_mini_window_div").style.visibility = "hidden";
+			document.getElementById("overlay_div").style.visibility = "hidden";
+			videoEl.style.visibility = "hidden";
+		}
+
+
+		( document.getElementById("video_mini_window_div") ).appendChild(videoEl);
+
+		videoEl.srcObject = stream;  // connect
+}
+
+
+
+
+
+
+
+
+
+
+
+
+window.addEventListener('DOMContentLoaded', ()=> {
+
+	document.getElementById('read_file_vrm0').addEventListener('change', ()=>{
+		read_vrm_file(0, document.getElementById('read_file_vrm0').files[0] );
+	},
+	true);
+
+	document.getElementById('read_file_vrm1').addEventListener('change', ()=>{
+		read_vrm_file(1, document.getElementById('read_file_vrm1').files[0] );
+	},
+	true);
+
+
+	let load_script_filename = [
+					"./character_settings.js",
+					"./BinaryFingers.js",
+					"./my_get_camera_information.js",
+					"./character_control.js",
+					"./control_panel.js",
+					"./face_api_capture.js",
+					"./main_camera_controls.js",
+					"./hand_action_loop.js",  
+					"./hand_3d_main_loop.js"
+				]
+
+
+	let scripts = new Array();
+
+	load_script_filename.forEach(function(element,i) {
+		scripts[i] = element+"?"+(new Date()).getTime();       // cache
+	});
+
+	load_js_script_callback(scripts);
+	let file_counter = 0;
+
+	function load_js_script_callback(elems) {
+		let script = new Array();
+		elems.forEach(function(element,i) {
+			script[i] = document.createElement('script');
+			script[i].src = element;
+			document.body.appendChild(script[i]);
+			script[i].onload = function() {
+				console.log("script loaded",load_script_filename.length, file_counter, element);
+				if(file_counter >= load_script_filename.length - 1 ){
+					settings_after_reading_js();
+				}
+				file_counter++;
+			};
+		});
+	}
+
+
+	function settings_after_reading_js(){
+		document.getElementById('puppet_x').value = characters_position[0][0];
+		document.getElementById('puppet_y').value = characters_position[0][1];
+		document.getElementById('puppet_z').value = characters_position[0][2];
+		document.getElementById('puppet_ry').value = characters_rotation[0][1];  // Y-axis
+
+		document.getElementById('avatar_x').value = characters_position[1][0];
+		document.getElementById('avatar_y').value = characters_position[1][1];
+		document.getElementById('avatar_z').value = characters_position[1][2];
+		document.getElementById('avatar_ry').value = characters_rotation[1][1];  // Y-axis
+
+
+		document.getElementById('puppet_x_value').innerHTML = characters_position[0][0];
+		document.getElementById('puppet_y_value').innerHTML = characters_position[0][1];
+		document.getElementById('puppet_z_value').innerHTML = characters_position[0][2];
+		document.getElementById('puppet_ry_value').innerHTML = characters_rotation[0][1];  // Y-axis
+
+		document.getElementById('avatar_x_value').innerHTML = characters_position[1][0];
+		document.getElementById('avatar_y_value').innerHTML = characters_position[1][1];
+		document.getElementById('avatar_z_value').innerHTML = characters_position[1][2];
+		document.getElementById('avatar_ry_value').innerHTML = characters_rotation[1][1];  // Y-axis
+
+		document.getElementById('puppet_name').innerHTML = vrm_files[0];
+		document.getElementById('avatar_name').innerHTML = vrm_files[1];
+
+
+
+
+
+
+
+		let tmp_value = document.getElementsByClassName('value');
+		let t_max = tmp_value.length;
+		for(let i=0;i<=t_max; i++){
+			if(typeof tmp_value[t_max-i] != 'undefined'){
+				tmp_value[t_max-i].remove();
+			}
+		}
+
+
+
+		// margin
+		my_margin_setting();
+
+		//control_panel_toggle
+		making_control_panel_toggle();
+
+		// Initializing character area
+		init(model_url);
+
+
+		option_check();
+		//再読み込みしたときにラジオボタンを戻さないブラウザがあるので
+		//ページ読み込み時にチェックを戻す
+
+
+// default 
+
+		document.getElementsByName("back")[1].checked = true;
+
+		set_bgcolor('white');
+
+		// Hand3D
+		document.getElementsByName("puppet_mode")[1].checked = true;
+
+		document.getElementsByName("track_method")[1].checked = true;
+
+		document.getElementsByName("capture_method")[1].checked = true;
+
+		document.getElementById("puppet_set").checked = true;
+		document.getElementById("avatar_set").checked = true;
+
+	}
+
+
+
+});
+
+
+
+function init(character_url){
+
+	// renderer
+	renderer = new THREE.WebGLRenderer({ alpha: true });
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.setPixelRatio(window.devicePixelRatio);
+	renderer.setClearColor(0x000000, 0);
+	document.getElementById('canvas-frame').appendChild(renderer.domElement);
+
+	// camera
+	camera = new THREE.PerspectiveCamera(10.0,   window.innerWidth/window.innerHeight,  0.1,  200.0);
+	camera.position.set(camera_position[0], camera_position[1], camera_position[2]);
+
+	// scene
+	scene = new THREE.Scene();
+
+	// light
+	let light = new THREE.DirectionalLight(0xffffff);
+	light.position.set(1.0, 1.0, 1.0).normalize();
+	scene.add(light);
+
+}
+
+function updateResults(){}
+
+</script>
+</html>
+
