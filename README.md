@@ -8,6 +8,7 @@ You can try this sample here https://social-exp.site/virtual_puppet25_local/
 
 <img src="demo2_virtual_puppet.gif" width="400">
 
+<img src="demo3_virtual_puppet.gif" width="400">
 
 
 This tool uses face-api-js.
